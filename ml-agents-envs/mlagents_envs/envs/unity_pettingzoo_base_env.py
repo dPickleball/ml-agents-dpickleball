@@ -156,7 +156,10 @@ class UnityPettingzooBaseEnv:
             if isinstance(current_action_space, spaces.Tuple):
                 action = ActionTuple(action[0], action[1])
             elif isinstance(current_action_space, spaces.MultiDiscrete):
-                action = ActionTuple(None, action)
+                # action = ActionTuple(None, action)
+                discrete_action = np.array(action, dtype=np.int32).reshape(1, -1)
+                action = ActionTuple(None, discrete_action)
+
             elif isinstance(current_action_space, spaces.Discrete):
                 action = ActionTuple(None, np.array(action).reshape(1, 1))
             else:
@@ -165,14 +168,17 @@ class UnityPettingzooBaseEnv:
         if not self._dones[current_agent]:
             current_behavior = _agent_id_to_behavior(current_agent)
             current_index = self._agent_id_to_index[current_agent]
+            print("action", action)
             if action.continuous is not None:
                 self._current_action[current_behavior].continuous[
                     current_index
                 ] = action.continuous[0]
+                print ("ac",action.continuous)
             if action.discrete is not None:
                 self._current_action[current_behavior].discrete[
                     current_index
                 ] = action.discrete[0]
+                print ("ad",action.discrete)
         else:
             self._live_agents.remove(current_agent)
             del self._observations[current_agent]
@@ -184,6 +190,7 @@ class UnityPettingzooBaseEnv:
     def _step(self):
         for behavior_name, actions in self._current_action.items():
             self._env.set_actions(behavior_name, actions)
+            print("behavior_name, actions",behavior_name, actions)
         self._env.step()
         self._reset_states()
         for behavior_name in self._env.behavior_specs.keys():
